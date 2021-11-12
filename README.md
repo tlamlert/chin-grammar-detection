@@ -1,1 +1,1 @@
-# chin-grammar-detection
+# chin-grammar-detector
