@@ -38,7 +38,7 @@ def main():
     # print(soup.prettify())
 
     # extract data
-    docs = soup.find_all('doc')              # find all object with tag 'text'
+    docs = soup.find_all('doc')     # find all object with tag 'doc'
     for doc in docs:
         text = doc.find('text').string.strip()
         correction = doc.find('correction').string.strip()
