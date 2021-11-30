@@ -15,7 +15,7 @@ def preprocess(file_name):
     # TODO: fix the function header
     # declare word parser and pos tagging models
     ws = WS("./data")           # word segmentation
-    pos = POS("./data")         # pos tagging
+    # pos = POS("./data")         # pos tagging
     # ner = NER("./dataset")      # entity detection
 
     # TODO: Parse SGML into something
@@ -32,7 +32,7 @@ def preprocess(file_name):
         raw_errors = doc.find_all('error')
         errors = []
         for err in raw_errors:
-            tuple = (err['end_off'], err['start_off'], err['type'])
+            tuple = (err['start_off'], err['end_off'], err['type'])
             errors.append(tuple)
 
         raw_input_sentences.append(text)
@@ -41,29 +41,67 @@ def preprocess(file_name):
 
     # TODO: Apply ckiptagger to parse the raw input sentences
     input_sentences = ws(raw_input_sentences)
-    input_pos = pos(raw_input_sentences)
-    input_sentences = np.append(input_sentences, input_pos, axis=0)
+    # input_pos = pos(raw_input_sentences)
+    # input_sentences = np.append(input_sentences, input_pos, axis=0)
 
     correct_sentences = ws(raw_correct_sentences)
-    correct_pos = pos(raw_correct_sentences)
-    correct_sentences = np.append(correct_sentences, correct_pos, axis=0)
+    # correct_pos = pos(raw_correct_sentences)
+    # correct_sentences = np.append(correct_sentences, correct_pos, axis=0)
 
-    return input_sentences, correct_sentences, list_of_errors
+    # TODO: parse and pad the list of errors
+    corresponding_err = []
+    for sentence, errors in zip(input_sentences, list_of_errors):
+        start, end = 0, 0
+        num_err = 0
+        errs = []
+        for word in sentence:
+            start = end + 1
+            end = end + len(word)
+            if (num_err < len(errors)):
+                st_err = int(errors[num_err][0])
+                ed_err = int(errors[num_err][1])
+                err_type = errors[num_err][2]
+                if ((start <= ed_err) & (end >= st_err)):
+                    errs.append(err_type)
+                    if end + 1 >= ed_err:
+                        num_err += 1
+                else:
+                    errs.append("C")
+            else:
+                errs.append("C")
+        corresponding_err.append(errs)
+
+    # print(input_sentences)
+    # print(correct_sentences)
+    # print(corresponding_err)
+
+    return input_sentences, correct_sentences, corresponding_err
 
 def main():
-    input_sentences, correct_sentences, list_of_errors = preprocess('test.txt')
+    # file location
+    to_be_processed_file = '../dataset/nlptea16cged_release1.0/Training/CGED16_HSK_TrainingSet.txt'
+    # to_be_processed_file = 'test.txt'
 
-    with open('input_sentences.txt', 'wb') as file:
+    # file location
+    directory = '../processed_dataset/'
+    input_sentence_file = directory + 'input_sentences'
+    correct_sentence_file = directory + 'correct_sentences'
+    label_file = directory + 'errors'
+
+    input_sentences, correct_sentences, list_of_errors = preprocess( to_be_processed_file )
+
+    with open(input_sentence_file, 'wb') as file:
         pickle.dump(input_sentences, file)
         file.close()
 
-    with open('correct_sentences.txt', 'wb') as file:
+    with open(correct_sentence_file, 'wb') as file:
         pickle.dump(correct_sentences, file)
         file.close()
 
-    with open('errors.txt', 'wb') as file:
+    with open(label_file, 'wb') as file:
         pickle.dump(list_of_errors, file)
         file.close()
 
 if __name__ == '__main__':
     main()
+

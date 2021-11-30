@@ -45,7 +45,7 @@ def main():
         raw_errors = doc.find_all('error')
         errors = []
         for err in raw_errors:
-            tuple = (err['end_off'], err['start_off'], err['type'])
+            tuple = (err['start_off'], err['end_off'], err['type'])
             errors.append(tuple)
 
         print(f"text: {text}")
