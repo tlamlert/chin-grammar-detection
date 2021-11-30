@@ -1,6 +1,8 @@
 # import tensorflow as tf
 import numpy as np
 import pickle
+import itertools
+import time
 from bs4 import BeautifulSoup
 from ckiptagger import data_utils, construct_dictionary, WS, POS, NER
 
@@ -69,6 +71,11 @@ def preprocess(file_name):
                 errs.append("C")
         corresponding_err.append(errs)
 
+    # TODO: concatenate return values into one single list
+    input_sentences = list(itertools.chain.from_iterable(input_sentences))
+    correct_sentences = list(itertools.chain.from_iterable(correct_sentences))
+    corresponding_err = list(itertools.chain.from_iterable(corresponding_err))
+
     # print(input_sentences)
     # print(correct_sentences)
     # print(corresponding_err)
@@ -86,8 +93,12 @@ def main():
     correct_sentence_file = directory + 'correct_sentences'
     label_file = directory + 'errors'
 
-    input_sentences, correct_sentences, list_of_errors = preprocess( to_be_processed_file )
+    print('processing...')
+    start_time = time.time()
+    input_sentences, correct_sentences, corresponding_err = preprocess( to_be_processed_file )
+    finish_time = time.time()
 
+    print('saving data to files...')
     with open(input_sentence_file, 'wb') as file:
         pickle.dump(input_sentences, file)
         file.close()
@@ -97,9 +108,12 @@ def main():
         file.close()
 
     with open(label_file, 'wb') as file:
-        pickle.dump(list_of_errors, file)
+        pickle.dump(corresponding_err, file)
         file.close()
+
+    assert(len(input_sentences) == len(corresponding_err))
+    print(f"input length: {len(input_sentences)}")
+    print(f"time to process: {finish_time - start_time}")
 
 if __name__ == '__main__':
     main()
-
