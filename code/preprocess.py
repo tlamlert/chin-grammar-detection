@@ -45,8 +45,6 @@ def preprocess(file_name):
     # input_sentences = np.append(input_sentences, input_pos, axis=0)
 
     correct_sentences = ws(raw_correct_sentences)
-    # correct_pos = pos(raw_correct_sentences)
-    # correct_sentences = np.append(correct_sentences, correct_pos, axis=0)
 
     # TODO: parse and pad the list of errors
     corresponding_err = []
