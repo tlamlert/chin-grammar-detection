@@ -88,8 +88,8 @@ def preprocess(file_name):
         corresponding_err[i] = errToInt[corresponding_err[i]]
 
     # TODO: map pos to corresponding integer
-    posToInt = {}
-    counter = 0
+    posToInt = {"WHITESPACE": 0}
+    counter = 1
     with open("data/model_pos/label_list.txt", 'r') as file:
         for line in file:
             pos = line.split()[0]
