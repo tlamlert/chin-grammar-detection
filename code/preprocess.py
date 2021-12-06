@@ -159,9 +159,9 @@ if __name__ == '__main__':
     input_sentences, input_pos, correct_sentences, labels = preprocess( to_be_processed_file )
     finish_time = time.time()
 
-    # print('saving data to files...')
-    # save_data(input_sentence_file, input_pos_file, correct_sentence_file, label_file,
-    #           input_sentences, input_pos, correct_sentences, labels)
+    print('saving data to files...')
+    save_data(input_sentence_file, input_pos_file, correct_sentence_file, label_file,
+              input_sentences, input_pos, correct_sentences, labels)
 
     assert(len(input_sentences) == len(labels))
     print(f"input length: {len(input_sentences)}")
