@@ -87,6 +87,17 @@ def preprocess(file_name):
     for i in range(0, len(corresponding_err)):
         corresponding_err[i] = errToInt[corresponding_err[i]]
 
+    # TODO: map pos to corresponding integer
+    posToInt = {}
+    counter = 0
+    with open("data/model_pos/label_list.txt", 'r') as file:
+        for line in file:
+            pos = line.split()[0]
+            posToInt[pos] = counter
+            counter += 1
+    for i in range(0, len(input_pos)):
+        input_pos[i] = posToInt[input_pos[i]]
+
     return input_sentences, input_pos, correct_sentences, corresponding_err
 
 def save_data(input_sentence_file, input_pos_file, correct_sentence_file, label_file,
@@ -148,9 +159,9 @@ if __name__ == '__main__':
     input_sentences, input_pos, correct_sentences, labels = preprocess( to_be_processed_file )
     finish_time = time.time()
 
-    print('saving data to files...')
-    save_data(input_sentence_file, input_pos_file, correct_sentence_file, label_file,
-              input_sentences, input_pos, correct_sentences, labels)
+    # print('saving data to files...')
+    # save_data(input_sentence_file, input_pos_file, correct_sentence_file, label_file,
+    #           input_sentences, input_pos, correct_sentences, labels)
 
     assert(len(input_sentences) == len(labels))
     print(f"input length: {len(input_sentences)}")
