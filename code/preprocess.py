@@ -125,7 +125,7 @@ if __name__ == '__main__':
     # file location
     to_be_processed_file = '../dataset/nlptea16cged_release1.0/Training/CGED16_HSK_TrainingSet.txt'
     # to_be_processed_file = 'test.txt'
-    directory = '../processed_dataset/'
+    directory = '../processed_dataset/Training/npltea16_HSK_TrainingSet'
     input_sentence_file = directory + 'input_sentences'
     input_pos_file = directory + 'input_pos'
     correct_sentence_file = directory + 'correct_sentences'
