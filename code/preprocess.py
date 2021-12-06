@@ -1,4 +1,3 @@
-# import tensorflow as tf
 import numpy as np
 import pickle
 import itertools
@@ -10,17 +9,18 @@ def preprocess(file_name):
     """
     Preprocess processes the input dataset which comes in SGML format
     :param file_name: location of the file to be preprocessed
-    :return: input_sentences,       a list of tensors of shape [sentence_size, 2]
-            correct_sentences,      a list of tensors of shape [sentence_size, 2]
-            errors                  a list of tensors of shape [sentence_size, error_class]
+    :return: input_sentences,       a list of length <number of words in the input sentences>
+            input_pos,              a list of length <number of words in the input sentences>
+            correct_sentences,      a list of length <number of words in the correct sentences>
+            errors                  a list of length <number of words in the input sentences>
     """
     # TODO: fix the function header
     # declare word parser and pos tagging models
     ws = WS("./data")           # word segmentation
-    # pos = POS("./data")         # pos tagging
+    pos = POS("./data")         # pos tagging
     # ner = NER("./dataset")      # entity detection
 
-    # TODO: Parse SGML into something
+    # TODO: Parse SGML into some variables
     raw_input_sentences = []     # list of sentences
     raw_correct_sentences = []   # list of sentences
     list_of_errors = []
@@ -43,8 +43,7 @@ def preprocess(file_name):
 
     # TODO: Apply ckiptagger to parse the raw input sentences
     input_sentences = ws(raw_input_sentences)
-    # input_pos = pos(raw_input_sentences)
-    # input_sentences = np.append(input_sentences, input_pos, axis=0)
+    input_pos = pos(raw_input_sentences)
 
     correct_sentences = ws(raw_correct_sentences)
 
@@ -73,34 +72,23 @@ def preprocess(file_name):
 
     # TODO: concatenate return values into one single list
     input_sentences = list(itertools.chain.from_iterable(input_sentences))
+    input_pos       = list(itertools.chain.from_iterable(input_pos))
     correct_sentences = list(itertools.chain.from_iterable(correct_sentences))
     corresponding_err = list(itertools.chain.from_iterable(corresponding_err))
 
-    # print(input_sentences)
-    # print(correct_sentences)
-    # print(corresponding_err)
+    return input_sentences, input_pos, correct_sentences, corresponding_err
 
-    return input_sentences, correct_sentences, corresponding_err
-
-def main():
-    # file location
-    to_be_processed_file = '../dataset/nlptea16cged_release1.0/Training/CGED16_HSK_TrainingSet.txt'
-    # to_be_processed_file = 'test.txt'
-
-    # file location
-    directory = '../processed_dataset/'
-    input_sentence_file = directory + 'input_sentences'
-    correct_sentence_file = directory + 'correct_sentences'
-    label_file = directory + 'errors'
-
-    print('processing...')
-    start_time = time.time()
-    input_sentences, correct_sentences, corresponding_err = preprocess( to_be_processed_file )
-    finish_time = time.time()
-
-    print('saving data to files...')
+def save_data(input_sentence_file, input_pos_file, correct_sentence_file, label_file,
+             input_sentences, input_pos, correct_sentences, labels):
+    '''
+    save data to the given file locations
+    '''
     with open(input_sentence_file, 'wb') as file:
         pickle.dump(input_sentences, file)
+        file.close()
+
+    with open(input_pos_file, 'wb') as file:
+        pickle.dump(input_pos, file)
         file.close()
 
     with open(correct_sentence_file, 'wb') as file:
@@ -108,12 +96,51 @@ def main():
         file.close()
 
     with open(label_file, 'wb') as file:
-        pickle.dump(corresponding_err, file)
+        pickle.dump(labels, file)
         file.close()
 
-    assert(len(input_sentences) == len(corresponding_err))
-    print(f"input length: {len(input_sentences)}")
-    print(f"time to process: {finish_time - start_time}")
+def get_data(input_sentence_file, input_pos_file, correct_sentence_file, label_file):
+    '''
+    retrieve and return data from the given file locations
+    '''
+    with open(input_sentence_file, 'rb') as file:
+        sentences = pickle.load(file)
+        file.close()
+
+    with open(input_pos_file, 'wb') as file:
+        input_pos = pickle.load(file)
+        file.close()
+
+    with open(correct_sentence_file, 'rb') as file:
+        correction = pickle.load(file)
+        file.close()
+
+    with open(label_file, 'rb') as file:
+        labels = pickle.load(file)
+        file.close()
+
+    return sentences, input_pos, correction, labels
 
 if __name__ == '__main__':
-    main()
+    # file location
+    to_be_processed_file = '../dataset/nlptea16cged_release1.0/Training/CGED16_HSK_TrainingSet.txt'
+    # to_be_processed_file = 'test.txt'
+    directory = '../processed_dataset/'
+    input_sentence_file = directory + 'input_sentences'
+    input_pos_file = directory + 'input_pos'
+    correct_sentence_file = directory + 'correct_sentences'
+    label_file = directory + 'errors'
+
+    print('processing...')
+    start_time = time.time()
+    # these return values are python lists
+    input_sentences, input_pos, correct_sentences, labels = preprocess( to_be_processed_file )
+    finish_time = time.time()
+
+    print('saving data to files...')
+    save_data(input_sentence_file, input_pos_file, correct_sentence_file, label_file,
+              input_sentences, input_pos, correct_sentences, labels)
+
+    assert(len(input_sentences) == len(labels))
+    print(f"input length: {len(input_sentences)}")
+    print(f"time to process: {finish_time - start_time}")
