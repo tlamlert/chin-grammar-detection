@@ -1,5 +1,7 @@
 import tensorflow as tf
 import numpy as np
+from preprocess import get_data
+from window_fn import window_data
 
 class RNN(tf.keras.Model):
     def __init__(self, vocab_size):
@@ -128,7 +130,20 @@ def load_embedding():
 
 def main():
     vocab_dict, dimension = load_embedding()  #size of embedding 300
-    train_input, train_labels, test_input, test_labels, vocab_dict = ##function
+
+    # file location
+    directory = '../processed_dataset/training/npltea16_HSK_TrainingSet/'
+    input_sentence_file = directory + 'input_sentences'
+    input_pos_file = directory + 'input_pos'
+    correct_sentence_file = directory + 'correct_sentences'
+    label_file = directory + 'errors'
+
+    train_input, train_input_pos, _, train_labels = get_data(input_sentence_file, input_pos_file, correct_sentence_file, label_file)
+    window_sz = 20
+    train_input = window_data(train_input, window_sz)
+    train_input_pos = window_data(train_input_pos, window_sz)
+    train_labels = window_data(train_labels, window_sz)
+
     model = RNN(len(vocab_dict))
     train(model, train_input, train_labels)
     perplexity, accuracy = test(model, test_input, test_labels)
