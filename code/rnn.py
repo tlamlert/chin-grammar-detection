@@ -87,6 +87,23 @@ class RNN(tf.keras.Model):
 
         return tf.reduce_mean(tf.keras.metrics.sparse_categorical_crossentropy(labels, probs))
 
+    def precision_and_recall(self, prbs, labels):
+        """
+        Computes the batch precision, recall, and f1 score
+		
+		:param prbs:  float tensor, word prediction probabilities [batch_size x window_size x num_classes]
+		:param labels:  integer tensor, word prediction labels [batch_size x window_size]
+		:return: scalar tensor of accuracy of the batch between 0 and 1
+		"""
+        predictions = tf.argmax(input=prbs, axis=2) #returns [batch_size x window_size]
+        cm = tf.math.confusion_matrix(labels, predictions).numpy()
+        true_pos = np.diag(cm)
+        precision = np.sum(true_pos / np.sum(cm, axis=0))
+        recall = np.sum(true_pos / np.sum(cm, axis=1))
+        f1score = 2* ((precision * recall)/(precision + recall))
+        return precision, recall, f1score
+
+
 def train(model, train_inputs, train_labels):
     num_batches = (int)(train_inputs.shape[0]/model.batch_size)
     
@@ -108,16 +125,26 @@ def train(model, train_inputs, train_labels):
 def test(model, test_inputs, test_labels):
     num_batches = (int)(test_inputs.shape[0]/model.batch_size)
     loss_list = []
+    precision_list = []
+    recall_list = []
+    f1score_list = []
     #run the model on the test data for all batches 
     for i in range(num_batches): 
         inputs_batch = test_inputs[model.batch_size*i:((i+1)*model.batch_size), :]
         labels_batch = test_labels[model.batch_size*i:((i+1)*model.batch_size), :]
         probs, new_state = model.call(inputs_batch, None) 
         loss_list.append(model.loss(probs, labels_batch))
+        precision, recall, f1score = model.precision_and_recall(probs, labels_batch)
+        precision_list.append(precision)
+        recall_list.append(recall)
+        f1score_list.append(f1score)
 
     perplexity = np.exp(tf.reduce_mean(loss_list))  
-    
-    return perplexity
+    avg_precision = np.reduce_mean(precision_list)
+    avg_recall = np.reduce_mean(recall_list)
+    avg_f1score = np.reduce_mean(f1score_list)
+
+    return perplexity, avg_precision, avg_recall, avg_f1score
 
 
 def load_embedding():
@@ -146,9 +173,11 @@ def main():
 
     model = RNN(len(vocab_dict))
     train(model, train_input, train_labels)
-    perplexity, accuracy = test(model, test_input, test_labels)
+    perplexity, precision, recall, f1score = test(model, test_input, test_labels)
     print("Perplexity: ", perplexity)
-    print("Accuracy: ", accuracy)
+    print("Precision: ", precision)
+    print("Recall: ", recall)
+    print("F1score: ", f1score)
 
     #train_ids [number sentences, sentence length] these are the word embeddings corresponding to dictionary
     #train_grammar_labels [number sentences, sentence length] these are the grammar embeddings 0-4 for type of error
