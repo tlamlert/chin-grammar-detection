@@ -19,8 +19,9 @@ def window_data(inputs, window_sz):
 
 if __name__ == '__main__':
     # file location
-    directory = '../processed_dataset/'
+    directory = '../processed_dataset/training/npltea16_HSK_TrainingSet/'
     input_sentence_file = directory + 'input_sentences'
+    input_pos_file = directory + 'input_pos'
     correct_sentence_file = directory + 'correct_sentences'
     label_file = directory + 'errors'
 
