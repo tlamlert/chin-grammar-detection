@@ -76,6 +76,17 @@ def preprocess(file_name):
     correct_sentences = list(itertools.chain.from_iterable(correct_sentences))
     corresponding_err = list(itertools.chain.from_iterable(corresponding_err))
 
+    # TODO: map err_type to corresponding integer
+    errToInt = {
+        "C": 0,
+        "R": 1,
+        "M": 2,
+        "S": 3,
+        "W": 4,
+    }
+    for i in range(0, len(corresponding_err)):
+        corresponding_err[i] = errToInt[corresponding_err[i]]
+
     return input_sentences, input_pos, correct_sentences, corresponding_err
 
 def save_data(input_sentence_file, input_pos_file, correct_sentence_file, label_file,
@@ -123,8 +134,8 @@ def get_data(input_sentence_file, input_pos_file, correct_sentence_file, label_f
 
 if __name__ == '__main__':
     # file location
-    to_be_processed_file = '../dataset/nlptea16cged_release1.0/Training/CGED16_HSK_TrainingSet.txt'
-    # to_be_processed_file = 'test.txt'
+    # to_be_processed_file = '../dataset/nlptea16cged_release1.0/Training/CGED16_HSK_TrainingSet.txt'
+    to_be_processed_file = 'test.txt'
     directory = '../processed_dataset/training/npltea16_HSK_TrainingSet/'
     input_sentence_file = directory + 'input_sentences'
     input_pos_file = directory + 'input_pos'
