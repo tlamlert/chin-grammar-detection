@@ -1,23 +1,19 @@
 import pickle
 
-def show_data(input_sentence_file, correct_sentence_file, label_file, num_data):
+def get_data(input_sentence_file, correct_sentence_file, label_file):
     with open(input_sentence_file, 'rb') as file:
         sentences = pickle.load(file)
         file.close()
-        print(sentences[:num_data])
 
     with open(correct_sentence_file, 'rb') as file:
         correction = pickle.load(file)
         file.close()
-        print(correction[:num_data])
 
     with open(label_file, 'rb') as file:
         errors = pickle.load(file)
         file.close()
-        print(errors[:num_data])
 
-    for word, err_type in zip(sentences[:num_data], errors[:num_data]):
-        print(f"{word}, {err_type}")
+    return sentences, errors, correction
 
 if __name__ == '__main__':
     # file location
@@ -26,8 +22,13 @@ if __name__ == '__main__':
     correct_sentence_file = directory + 'correct_sentences'
     label_file = directory + 'errors'
 
-    # start =
-    # end =
-    num_data = 100
+    # get data
+    sentences, errors, correction = get_data(input_sentence_file, correct_sentence_file, label_file)
 
-    show_data(input_sentence_file, correct_sentence_file, label_file, num_data)
+    # print data
+    num_data = 100
+    print(sentences[:num_data])
+    print(errors[:num_data])
+    print(correction[:num_data])
+    for word, err_type in zip(sentences[:num_data], errors[:num_data]):
+        print(f"{word}, {err_type}")
