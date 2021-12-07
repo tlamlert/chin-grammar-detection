@@ -10,7 +10,7 @@ from preprocess import get_data
 from window_fn import window_data
 
 class RNN(tf.keras.Model):
-    def __init__(self, vocab_size):
+    def __init__(self, vocab_size, pos_size):
 
         super(RNN, self).__init__()
 
@@ -20,11 +20,12 @@ class RNN(tf.keras.Model):
         """
         # hyperparameter
         self.vocab_size = vocab_size  #use for embedding lookup...gives a 3d matrix
+        self.pos_size = pos_size
         self.num_classes = 5
 
         self.embedding_size = 256  #weights
         self.rnn_size = 256
-        self.dense_size = 30 #128
+        self.dense_size = 128
 
         self.batch_size = 100  #number of rows
         self.window_size = 20  #length of sentence/row
@@ -36,6 +37,7 @@ class RNN(tf.keras.Model):
         #self.embedding_dict, self.embedding_size = load_embedding()
         # TODO: check this rnn model
         self.E = tf.Variable(tf.random.normal([self.vocab_size, self.embedding_size], stddev=.1)) 
+        self.pos_E = tf.Variable(tf.random.normal([self.pos_size, self.embedding_size], stddev=.1)) 
         self.RNN = tf.keras.layers.LSTM(self.rnn_size, return_sequences=True, return_state=True)
         self.classification_layer = tf.keras.Sequential([
             tf.keras.layers.Dense(self.dense_size),
@@ -43,37 +45,23 @@ class RNN(tf.keras.Model):
             tf.keras.layers.Dense(self.num_classes),
         ])
 
-    def call(self, inputs):
+    def call(self, inputs, pos):
         """
 
         :param inputs: a tensor of shape [batch_size, window_size]
+        param pos: a tensor of shape [batch_size, window_size]
         :return: probs: a tensor of shape [batch_size, num_classes, rnn_size], and two tensors 
         of shape [batch_size, rnn_size] corresponding to the last output and the cell state 
         """
         # TODO: fill this function
         embeddings = tf.nn.embedding_lookup(self.E, inputs)   #returns tensor with dimensions [bsz, window_sz, embedding_sz]
-        probs1, last_output, cell_state = self.RNN(embeddings) #returns tensor with dimensions [bsz, window_sz, rnn_sz], 2 tensors of [bsz, rnn_sz]
+        pos_embeddings = tf.nn.embedding_lookup(self.pos_E, pos) #returns tensor with dimensions [bsz, window_sz, embedding_sz]
+        concat_embeddings = tf.concat([embeddings, pos_embeddings], 2)
+        probs1, last_output, cell_state = self.RNN(concat_embeddings) #returns tensor with dimensions [bsz, window_sz, rnn_sz], 2 tensors of [bsz, rnn_sz]
         layer2 = self.classification_layer(probs1) #returns tensor with dimensions [bsz, window_sz, num_classes]
         probs = tf.nn.softmax(layer2)
         return probs, (last_output, cell_state)
-        '''
-        # embedding lookup
-        embedded = []
-        for idx, sentence in enumerate(inputs):
-            embedded.append([self.embedding_dict[x] for x in sentence])
-        embedded = tf.convert_to_tensor(embedded)
-        # embedded: a tensor of shape [batch_size, window_size, embedding_size]
         
-        # RNN
-        hidden_states = self.RNN(embedded)
-        # hidden_states: a tensor of shape [batch_size, window_size]
-
-        # classification layer
-        error_prop = self.classification_layer(hidden_states)
-        # error_prop: a tensor of shape [batch_size, window_size, num_class=5]
-
-        return error_prop
-        '''
 
     def loss_function(self, probs, labels):
         """
@@ -82,17 +70,8 @@ class RNN(tf.keras.Model):
         :param labels: a tensor of shape [batch_size, window_size]
         :return: loss: a tensor of shape [1]
         """
-        # loss function: -y * log(n) - (1 - y) log(1-n)
-        # Where n(.) represent the probability in the training corpus
-        '''
-        np.argmax
-        one hot vector
-        element-wise multiplication
-
-        loss = tf.reduce_sum()
-        return loss
-        '''
         prediction = tf.math.argmax(probs, axis=2)
+
         mask = tf.not_equal(labels, 0) | tf.not_equal(prediction, 0)
         # print(probs)
         # print(prediction)
@@ -102,6 +81,8 @@ class RNN(tf.keras.Model):
         losses = tf.keras.metrics.sparse_categorical_crossentropy(labels, probs)
         loss = tf.reduce_sum(tf.boolean_mask(losses, mask))
         return loss
+
+        #return tf.reduce_mean(tf.keras.metrics.sparse_categorical_crossentropy(labels, probs))
 
     def precision_and_recall(self, prbs, labels):
         """
@@ -127,42 +108,19 @@ class RNN(tf.keras.Model):
         f1score /= labels.shape[0]
         #print(precision, recall, f1score)
         return precision, recall, f1score
-        '''       
-        #print("Probs shape", prbs.shape)
-        #print("Probs", prbs[0])
-        #print("Labels shape", labels.shape)
-        #print("Labels", labels[0])
-        predictions = tf.argmax(input=prbs, axis=2) #returns [batch_size x window_size]
-        #print("Predictions shape", predictions.shape)
-        #print("Predictions", predictions[0])
-        cm = np.zeros((self.num_classes, self.num_classes))
-        true_pos = np.zeros(self.num_classes)
-        for i in range(labels.shape[0]):
-            cm += tf.math.confusion_matrix(labels[i], predictions[i], 5).numpy()
-            true_pos += np.diag(cm)
-        print("Confusion matrix", cm)
-        print("True pos", true_pos)
-        print("np.sum axis 0", np.sum(cm, axis=0))
-        print("np.sum axis 1", np.sum(cm, axis=1))
-        precision = np.mean(np.divide(true_pos, np.sum(cm, axis=0)))
-        print("Precision", precision)
-        recall = np.mean(np.divide(true_pos, np.sum(cm, axis=1)))
-        print("Recall", recall)
-        f1score = 2* ((precision * recall)/(precision + recall))
-        print("F1score", f1score)
-        return precision, recall, f1score
-        '''
+        
 
-def train(model, train_inputs, train_labels):
+def train(model, train_inputs, train_labels, train_pos):
     num_batches = (int)(train_inputs.shape[0]/model.batch_size)
     
     for i in range(num_batches): 
         inputs_batch = train_inputs[model.batch_size*i:((i+1)*model.batch_size), :]
         labels_batch = train_labels[model.batch_size*i:((i+1)*model.batch_size), :]
-    
+        pos_batch = train_pos[model.batch_size*i:((i+1)*model.batch_size), :]
+
         #backprop
         with tf.GradientTape() as tape: 
-            probs, new_state = model.call(inputs_batch)
+            probs, new_state = model.call(inputs_batch, pos_batch)
             loss = model.loss_function(probs, labels_batch)
             print(loss)
             
@@ -172,7 +130,7 @@ def train(model, train_inputs, train_labels):
 
     return
 
-def test(model, test_inputs, test_labels):
+def test(model, test_inputs, test_labels, test_pos):
     num_batches = (int)(test_inputs.shape[0]/model.batch_size)
     loss_list = []
     precision_list = []
@@ -182,7 +140,9 @@ def test(model, test_inputs, test_labels):
     for i in range(num_batches): 
         inputs_batch = test_inputs[model.batch_size*i:((i+1)*model.batch_size), :]
         labels_batch = test_labels[model.batch_size*i:((i+1)*model.batch_size), :]
-        probs, new_state = model.call(inputs_batch) 
+        pos_batch = test_pos[model.batch_size*i:((i+1)*model.batch_size), :]
+
+        probs, new_state = model.call(inputs_batch, pos_batch) 
         loss = model.loss_function(probs, labels_batch)
         loss_list.append(loss)
         print("Test loss", loss)
@@ -211,7 +171,7 @@ def load_embedding():
 
 if __name__ == '__main__':
     ''' 
-    DON'T USE THIS
+    #DON'T USE THIS
     vocab_dict, dimension = load_embedding()  #size of embedding 300
     print("Vocab dict", len(vocab_dict))
     print("Dimension", dimension)
@@ -223,7 +183,7 @@ if __name__ == '__main__':
     '''
 
     # file location
-    directory = '../processed_dataset/training/npltea16_HSK_TrainingSet/'
+    directory = 'processed_dataset/training/npltea16_HSK_TrainingSet/'    
     input_sentence_file = directory + 'input_sentences'
     input_pos_file = directory + 'input_pos'
     correct_sentence_file = directory + 'correct_sentences'
@@ -237,8 +197,11 @@ if __name__ == '__main__':
     # ignore what doesn't fit into the window size
     inputs = train_input[:num_inputs - num_inputs % 300000]  #window_sz = 20 
     labels = train_labels[:num_inputs - num_inputs % 300000]
+    pos = train_input_pos[:num_inputs - num_inputs % 300000]
     #print("Inputs", len(inputs))  #Inputs 300000
-    vocab_list = list(set(inputs))
+    vocab_list = list(set(inputs))  
+    pos_list = list(set(pos))       
+    print("My pos length", len(pos_list))                         
     vocab_dict = dict(zip(vocab_list, range(len(vocab_list))))
     #print("My dict length", len(vocab_dict))  #My dict length 22699
 
@@ -251,20 +214,24 @@ if __name__ == '__main__':
     
     window_sz = 20
     inputs = window_data(input_ids, window_sz)
-    #train_input_pos = window_data(train_input_pos, window_sz)
+    pos = window_data(pos, window_sz)
     labels = window_data(labels, window_sz)
-    train_input = inputs[0:2400]
-    train_labels = labels[0:2400]
-    test_input = inputs[2400:]
-    test_labels = labels[2400:]
+    train_input = inputs[0:12000]
+    train_labels = labels[0:12000]
+    train_pos = pos[0:12000]
+    test_input = inputs[12000:]
+    test_labels = labels[12000:]
+    test_pos = pos[12000:]
     #corrections = window_data(corrections, window_sz)
-    
+    print("Train input pos", train_pos[0])
+    '''
     print("Train input", train_input[0])
     print("Train labels", train_labels[0])
     print("Test input", test_input[1])
     print("Test labels", test_labels[1])
+    print("Train input pos", train_pos.shape)
+    print("Train input pos", train_pos[0])
 
-    '''
     print("Here")
     print("Train input", train_input.shape)
     print("Train input pos", train_input_pos.shape)
@@ -287,10 +254,11 @@ if __name__ == '__main__':
     '是' '一' '个']
     '''
 
-    
-    model = RNN(len(vocab_dict))
-    train(model, train_input, train_labels)
-    perplexity, precision, recall, f1score = test(model, test_input, test_labels)
+    print("Pos list", pos_list)
+    model = RNN(len(vocab_dict), 61)  #pos_list has nums 0-60 but 49 and 59 are missing
+    #for i in range(10):
+    train(model, train_input, train_labels, train_pos)
+    perplexity, precision, recall, f1score = test(model, test_input, test_labels, test_pos)
     print("Perplexity: ", perplexity)
     print("Precision: ", precision)
     print("Recall: ", recall)
