@@ -1,5 +1,5 @@
 import numpy as np
-from show_data import get_data
+# from show_data import get_data
 
 def window_data(inputs, window_sz):
     '''

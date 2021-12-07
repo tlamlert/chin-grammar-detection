@@ -92,8 +92,16 @@ class RNN(tf.keras.Model):
         loss = tf.reduce_sum()
         return loss
         '''
+        prediction = tf.math.argmax(probs, axis=2)
+        mask = tf.not_equal(labels, 0) | tf.not_equal(prediction, 0)
+        # print(probs)
+        # print(prediction)
+        # print(labels)
+        # print(mask)
 
-        return tf.reduce_mean(tf.keras.metrics.sparse_categorical_crossentropy(labels, probs))
+        losses = tf.keras.metrics.sparse_categorical_crossentropy(labels, probs)
+        loss = tf.reduce_sum(tf.boolean_mask(losses, mask))
+        return loss
 
     def precision_and_recall(self, prbs, labels):
         """
@@ -215,7 +223,7 @@ if __name__ == '__main__':
     '''
 
     # file location
-    directory = 'processed_dataset/training/npltea16_HSK_TrainingSet/'    
+    directory = '../processed_dataset/training/npltea16_HSK_TrainingSet/'
     input_sentence_file = directory + 'input_sentences'
     input_pos_file = directory + 'input_pos'
     correct_sentence_file = directory + 'correct_sentences'
@@ -245,10 +253,10 @@ if __name__ == '__main__':
     inputs = window_data(input_ids, window_sz)
     #train_input_pos = window_data(train_input_pos, window_sz)
     labels = window_data(labels, window_sz)
-    train_input = inputs[0:12000]
-    train_labels = labels[0:12000]
-    test_input = inputs[12000:]
-    test_labels = labels[12000:]
+    train_input = inputs[0:2400]
+    train_labels = labels[0:2400]
+    test_input = inputs[2400:]
+    test_labels = labels[2400:]
     #corrections = window_data(corrections, window_sz)
     
     print("Train input", train_input[0])
