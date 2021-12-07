@@ -34,8 +34,6 @@ class RNN(tf.keras.Model):
         self.optimizer = tf.keras.optimizers.Adam(self.learning_rate)
 
         # model architecture
-        #self.embedding_dict, self.embedding_size = load_embedding()
-        # TODO: check this rnn model
         self.E = tf.Variable(tf.random.normal([self.vocab_size, self.embedding_size], stddev=.1)) 
         self.pos_E = tf.Variable(tf.random.normal([self.pos_size, self.embedding_size], stddev=.1)) 
         self.RNN = tf.keras.layers.LSTM(self.rnn_size, return_sequences=True, return_state=True)
@@ -47,7 +45,6 @@ class RNN(tf.keras.Model):
 
     def call(self, inputs, pos):
         """
-
         :param inputs: a tensor of shape [batch_size, window_size]
         param pos: a tensor of shape [batch_size, window_size]
         :return: probs: a tensor of shape [batch_size, num_classes, rnn_size], and two tensors 
@@ -65,7 +62,6 @@ class RNN(tf.keras.Model):
 
     def loss_function(self, probs, labels):
         """
-
         :param probs: a tensor of shape [batch_size, window_size, num_class=5]
         :param labels: a tensor of shape [batch_size, window_size]
         :return: loss: a tensor of shape [1]
@@ -170,18 +166,6 @@ def load_embedding():
 '''
 
 if __name__ == '__main__':
-    ''' 
-    #DON'T USE THIS
-    vocab_dict, dimension = load_embedding()  #size of embedding 300
-    print("Vocab dict", len(vocab_dict))
-    print("Dimension", dimension)
-    
-    #Token_list (13136,)
-    #Vector_list (13136, 300)
-    #Vocab dict 13136
-    #Dimension 300
-    '''
-
     # file location
     directory = 'processed_dataset/training/npltea16_HSK_TrainingSet/'    
     input_sentence_file = directory + 'input_sentences'
@@ -192,53 +176,52 @@ if __name__ == '__main__':
     train_input, train_input_pos, corrections, train_labels = get_data(input_sentence_file, input_pos_file, correct_sentence_file, label_file)
     
     # create dictionary
-    num_inputs = len(train_input)
-    #print("Num inputs", num_inputs)  #Num inputs 302494
+    num_inputs = len(train_input) #Num inputs 302494
     # ignore what doesn't fit into the window size
     inputs = train_input[:num_inputs - num_inputs % 300000]  #window_sz = 20 
     labels = train_labels[:num_inputs - num_inputs % 300000]
     pos = train_input_pos[:num_inputs - num_inputs % 300000]
-    #print("Inputs", len(inputs))  #Inputs 300000
-    vocab_list = list(set(inputs))  
-    pos_list = list(set(pos))       
-    print("My pos length", len(pos_list))                         
-    vocab_dict = dict(zip(vocab_list, range(len(vocab_list))))
-    #print("My dict length", len(vocab_dict))  #My dict length 22699
 
-    
+    vocab_list = list(set(inputs))  
+    pos_list = list(set(pos))                         
+    vocab_dict = dict(zip(vocab_list, range(len(vocab_list))))
+
     # TODO: read in and tokenize training data
     input_ids = [vocab_dict[x] for x in inputs] 
-    # TODO: read in and tokenize testing data
-    #test_ids = [vocab_dict[x] for x in test_list] 
-    
     
     window_sz = 20
     inputs = window_data(input_ids, window_sz)
     pos = window_data(pos, window_sz)
     labels = window_data(labels, window_sz)
+
     train_input = inputs[0:12000]
     train_labels = labels[0:12000]
     train_pos = pos[0:12000]
+
     test_input = inputs[12000:]
     test_labels = labels[12000:]
     test_pos = pos[12000:]
     #corrections = window_data(corrections, window_sz)
-    print("Train input pos", train_pos[0])
-    '''
-    print("Train input", train_input[0])
-    print("Train labels", train_labels[0])
-    print("Test input", test_input[1])
-    print("Test labels", test_labels[1])
-    print("Train input pos", train_pos.shape)
-    print("Train input pos", train_pos[0])
 
-    print("Here")
+    model = RNN(len(vocab_dict), 61)  #pos_list has nums 0-60 but 49 and 59 are missing
+    #for i in range(10):
+    train(model, train_input, train_labels, train_pos)
+    perplexity, precision, recall, f1score = test(model, test_input, test_labels, test_pos)
+    print("Perplexity: ", perplexity)
+    print("Precision: ", precision)
+    print("Recall: ", recall)
+    print("F1score: ", f1score)
+    
+
+
+    '''
+    Print statements:
     print("Train input", train_input.shape)
-    print("Train input pos", train_input_pos.shape)
+    print("Train input pos", train_pos.shape)
     print("Train labels", train_labels.shape)
     print("Corrections", corrections.shape)
     print("Train input", train_input[0])
-    print("Train input pos", train_input_pos[0])
+    print("Train input pos", train_pos[0])
     print("Train labels", train_labels[0])
     print("Corrections", corrections[0])
     
@@ -253,18 +236,6 @@ if __name__ == '__main__':
     Corrections ['别' '只' '想' '自己' '，' '要' '想想' '你' '周围' '的' '人' '。' '还' '有' '，' '如果' '你'
     '是' '一' '个']
     '''
-
-    print("Pos list", pos_list)
-    model = RNN(len(vocab_dict), 61)  #pos_list has nums 0-60 but 49 and 59 are missing
-    #for i in range(10):
-    train(model, train_input, train_labels, train_pos)
-    perplexity, precision, recall, f1score = test(model, test_input, test_labels, test_pos)
-    print("Perplexity: ", perplexity)
-    print("Precision: ", precision)
-    print("Recall: ", recall)
-    print("F1score: ", f1score)
-    
-
 
     #*************************
     #Comments about inputs
