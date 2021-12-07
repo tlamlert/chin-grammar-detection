@@ -1,6 +1,11 @@
 import tensorflow as tf
 import numpy as np
+import sklearn
 from tensorflow.keras import Model
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import classification_report
 from preprocess import get_data
 from window_fn import window_data
 
@@ -21,7 +26,6 @@ class RNN(tf.keras.Model):
         self.rnn_size = 256
         self.dense_size = 30 #128
 
-        self.confusion_matrix = np.zeros((self.num_classes, self.num_classes))
         self.batch_size = 100  #number of rows
         self.window_size = 20  #length of sentence/row
 
@@ -99,6 +103,23 @@ class RNN(tf.keras.Model):
 		:param labels:  integer tensor, word prediction labels [batch_size x window_size]
 		:return: scalar tensor of accuracy of the batch between 0 and 1
 		"""
+        predictions = tf.argmax(input=prbs, axis=2) #returns [batch_size x window_size]
+        print("Predictions", predictions[0])
+        print("Labels", labels[0])
+        precision = [0]
+        recall = [0]
+        f1score = [0]
+        for i in range(labels.shape[0]):
+            precision += sklearn.metrics.precision_score(labels[i], predictions[i], average='macro', zero_division=0)
+            recall += sklearn.metrics.recall_score(labels[i], predictions[i], average='macro', zero_division=0)
+            f1score += sklearn.metrics.f1_score(labels[i], predictions[i], average='macro', zero_division=0)
+            #print(classification_report(labels[i], predictions[i], zero_division=0))
+        precision /= labels.shape[0]
+        recall /= labels.shape[0]
+        f1score /= labels.shape[0]
+        #print(precision, recall, f1score)
+        return precision, recall, f1score
+        '''       
         #print("Probs shape", prbs.shape)
         #print("Probs", prbs[0])
         #print("Labels shape", labels.shape)
@@ -122,7 +143,7 @@ class RNN(tf.keras.Model):
         f1score = 2* ((precision * recall)/(precision + recall))
         print("F1score", f1score)
         return precision, recall, f1score
-
+        '''
 
 def train(model, train_inputs, train_labels):
     num_batches = (int)(train_inputs.shape[0]/model.batch_size)
