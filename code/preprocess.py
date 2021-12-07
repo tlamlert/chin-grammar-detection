@@ -43,7 +43,7 @@ def preprocess(file_name):
 
     # TODO: Apply ckiptagger to parse the raw input sentences
     input_sentences = ws(raw_input_sentences)
-    input_pos = pos(raw_input_sentences)
+    input_pos = pos(input_sentences)
 
     correct_sentences = ws(raw_correct_sentences)
 

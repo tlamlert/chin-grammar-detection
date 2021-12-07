@@ -24,6 +24,11 @@ def show_data(input_sentence_file, correct_sentence_file, input_pos_file, label_
     for word, pos, err_type in zip(sentences[:num_data], input_pos[:num_data], errors[:num_data]):
         print(f"{word}, {pos}, {err_type}")
 
+    print(f"Input length: {len(sentences)}")
+    print(f"POS length: {len(input_pos)}")
+    print(f"Labels length: {len(errors)}")
+    print(f"Correction length: {len(correction)}")
+
 if __name__ == '__main__':
     # file location
     directory = '../processed_dataset/training/npltea16_HSK_TrainingSet/'
