@@ -129,7 +129,7 @@ def get_data(input_sentence_file, input_pos_file, correct_sentence_file, label_f
         sentences = pickle.load(file)
         file.close()
 
-    with open(input_pos_file, 'wb') as file:
+    with open(input_pos_file, 'rb') as file:
         input_pos = pickle.load(file)
         file.close()
 
